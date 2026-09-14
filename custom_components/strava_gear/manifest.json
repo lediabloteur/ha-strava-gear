@@ -1,0 +1,15 @@
+{
+  "domain": "strava_gear",
+  "name": "Strava Gear & Shoes Tracker",
+  "codeowners": [
+    "@romainsapin"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/romainsapin/ha-strava-gear",
+  "issue_tracker": "https://github.com/romainsapin/ha-strava-gear/issues",
+  "requirements": [
+    "requests>=2.31.0"
+  ],
+  "version": "1.0.0",
+  "iot_class": "cloud_polling"
+}

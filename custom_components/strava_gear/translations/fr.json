@@ -1,0 +1,15 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Strava Gear & Shoes Tracker",
+        "description": "Configurez l'acc\u00e8s \u00e0 vos \u00e9quipements Strava.",
+        "data": {
+          "client_id": "Client ID Strava",
+          "client_secret": "Client Secret Strava",
+          "refresh_token": "Refresh Token Strava"
+        }
+      }
+    }
+  }
+}
