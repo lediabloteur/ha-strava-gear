@@ -11,6 +11,11 @@ from .const import DOMAIN, CONF_CLIENT_ID, CONF_CLIENT_SECRET, CONF_REFRESH_TOKE
 
 _LOGGER = logging.getLogger(__name__)
 
+DEFAULT_GEAR_IDS = [
+    'g22352222', 'g17506784', 'g17087160', 'g30608631', 'g22619110', 'g20131340',
+    'b16216412', 'b10239940', 'b8554804'
+]
+
 class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Strava gear data."""
 
@@ -45,49 +50,65 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
             self.refresh_token = tj.get("refresh_token", self.refresh_token)
 
         headers = {"Authorization": f"Bearer {self.access_token}"}
-        ath_res = requests.get("https://www.strava.com/api/v3/athlete", headers=headers, timeout=10)
-        if ath_res.status_code != 200:
-            raise UpdateFailed(f"Failed to fetch Strava athlete: {ath_res.text}")
+        
+        gear_ids = list(DEFAULT_GEAR_IDS)
 
-        athlete = ath_res.json()
+        # Also try to discover gear IDs from athlete profile if available
+        try:
+            ath_res = requests.get("https://www.strava.com/api/v3/athlete", headers=headers, timeout=10)
+            if ath_res.status_code == 200:
+                athlete = ath_res.json()
+                for s in athlete.get("shoes", []):
+                    if s.get("id") and s["id"] not in gear_ids:
+                        gear_ids.append(s["id"])
+                for b in athlete.get("bikes", []):
+                    if b.get("id") and b["id"] not in gear_ids:
+                        gear_ids.append(b["id"])
+        except Exception as e:
+            _LOGGER.warning("Could not fetch athlete profile: %s", e)
+
         shoes = []
-        for s in athlete.get("shoes", []):
-            sid = s.get("id")
-            g_res = requests.get(f"https://www.strava.com/api/v3/gear/{sid}", headers=headers, timeout=5)
-            if g_res.status_code == 200:
-                gj = g_res.json()
-                km = round(gj.get("distance", 0) / 1000.0, 1)
-                max_km = 1000.0 if "tr" in gj.get("name", "").lower() else (600.0 if "pulsar" in gj.get("name", "").lower() else 800.0)
-                wear_pct = min(100.0, round((km / max_km) * 100.0, 1))
-                remaining = max(0.0, round(max_km - km, 1))
-                shoes.append({
-                    "id": sid,
-                    "name": gj.get("name"),
-                    "brand": gj.get("brand_name"),
-                    "model": gj.get("model_name"),
-                    "distance_km": km,
-                    "max_km": max_km,
-                    "remaining_km": remaining,
-                    "wear_pct": wear_pct,
-                    "primary": gj.get("primary", False),
-                    "replacement_needed": wear_pct >= 95.0
-                })
-
         bikes = []
-        for b in athlete.get("bikes", []):
-            bid = b.get("id")
-            g_res = requests.get(f"https://www.strava.com/api/v3/gear/{bid}", headers=headers, timeout=5)
-            if g_res.status_code == 200:
-                gj = g_res.json()
-                km = round(gj.get("distance", 0) / 1000.0, 1)
-                bikes.append({
-                    "id": bid,
-                    "name": gj.get("name"),
-                    "brand": gj.get("brand_name"),
-                    "model": gj.get("model_name"),
-                    "distance_km": km,
-                    "primary": gj.get("primary", False)
-                })
+
+        for gid in gear_ids:
+            try:
+                g_res = requests.get(f"https://www.strava.com/api/v3/gear/{gid}", headers=headers, timeout=5)
+                if g_res.status_code == 200:
+                    gj = g_res.json()
+                    name = gj.get("name", "")
+                    km = round(gj.get("distance", 0) / 1000.0, 1)
+                    brand = gj.get("brand_name") or ""
+                    model = gj.get("model_name") or ""
+                    primary = gj.get("primary", False)
+
+                    if gid.startswith("g"):
+                        name_lower = name.lower()
+                        max_km = 1000.0 if "tr" in name_lower else (600.0 if "pulsar" in name_lower else 800.0)
+                        wear_pct = min(100.0, round((km / max_km) * 100.0, 1))
+                        remaining = max(0.0, round(max_km - km, 1))
+                        shoes.append({
+                            "id": gid,
+                            "name": name,
+                            "brand": brand,
+                            "model": model,
+                            "distance_km": km,
+                            "max_km": max_km,
+                            "remaining_km": remaining,
+                            "wear_pct": wear_pct,
+                            "primary": primary,
+                            "replacement_needed": wear_pct >= 95.0
+                        })
+                    elif gid.startswith("b"):
+                        bikes.append({
+                            "id": gid,
+                            "name": name,
+                            "brand": brand,
+                            "model": model,
+                            "distance_km": km,
+                            "primary": primary
+                        })
+            except Exception as ex:
+                _LOGGER.warning("Failed fetching gear %s: %s", gid, ex)
 
         return {"shoes": shoes, "bikes": bikes}
 
