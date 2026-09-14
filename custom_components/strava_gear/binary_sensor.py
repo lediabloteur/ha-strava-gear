@@ -32,3 +32,13 @@ class StravaShoeWearAlertBinarySensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self._get_item().get("replacement_needed", False)
+
+    @property
+    def extra_state_attributes(self):
+        item = self._get_item()
+        return {
+            "distance_km": item.get("distance_km"),
+            "max_km": item.get("max_km"),
+            "wear_pct": item.get("wear_pct"),
+            "remaining_km": item.get("remaining_km"),
+        }

@@ -44,10 +44,12 @@ class StravaShoeSensor(CoordinatorEntity, SensorEntity):
         return {
             "brand": item.get("brand"),
             "model": item.get("model"),
+            "notification_distance": item.get("notification_distance"),
             "max_km": item.get("max_km"),
             "remaining_km": item.get("remaining_km"),
             "wear_pct": item.get("wear_pct"),
-            "primary": item.get("primary")
+            "primary": item.get("primary"),
+            "retired": item.get("retired", False),
         }
 
 class StravaBikeSensor(CoordinatorEntity, SensorEntity):
@@ -72,8 +74,15 @@ class StravaBikeSensor(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self):
         item = self._get_item()
-        return {
+        attrs = {
             "brand": item.get("brand"),
             "model": item.get("model"),
-            "primary": item.get("primary")
+            "primary": item.get("primary"),
+            "retired": item.get("retired", False),
         }
+        if item.get("max_km") is not None:
+            attrs["notification_distance"] = item.get("notification_distance")
+            attrs["max_km"] = item.get("max_km")
+            attrs["remaining_km"] = item.get("remaining_km")
+            attrs["wear_pct"] = item.get("wear_pct")
+        return attrs

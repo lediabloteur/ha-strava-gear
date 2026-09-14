@@ -8,10 +8,11 @@ A dedicated Home Assistant integration for tracking all your **running shoes and
 ---
 
 ## ✨ Features
-- 👟 **Individual Shoe Sensors**: Tracks current distance, remaining distance to max lifespan (e.g. 800 km), and wear %.
-- 🚲 **Individual Bike Sensors**: Tracks gravel, road, and mountain bike mileage.
-- ⚠️ **Wear Alert Binary Sensors**: Turns `ON` when a shoe reaches 95% or 100% wear to trigger automated replacement notifications.
-- ⚡ **Auto-refresh & OAuth**: Automatically refreshes Strava OAuth tokens.
+- 👟 **Individual Shoe Sensors**: Tracks current distance, distance limit defined on Strava (`notification_distance` / `max_km`), remaining distance, and wear %.
+- 🚲 **Individual Bike Sensors**: Tracks gravel, road, and mountain bike mileage with wear metrics if a distance limit is defined.
+- 🎯 **Automatic Strava Limit Sync**: Directly synchronizes the distance notification limit set on Strava for each piece of equipment.
+- ⚠️ **Wear Alert Binary Sensors**: Turns `ON` when gear reaches 95% or 100% wear to trigger automated replacement notifications.
+- ⚡ **Auto-refresh & OAuth**: Automatically refreshes Strava OAuth tokens and discovers gear from profile and recent activities.
 
 ---
 

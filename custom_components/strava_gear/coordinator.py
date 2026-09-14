@@ -58,14 +58,25 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
             ath_res = requests.get("https://www.strava.com/api/v3/athlete", headers=headers, timeout=10)
             if ath_res.status_code == 200:
                 athlete = ath_res.json()
-                for s in athlete.get("shoes", []):
+                for s in athlete.get("shoes", []) or []:
                     if s.get("id") and s["id"] not in gear_ids:
                         gear_ids.append(s["id"])
-                for b in athlete.get("bikes", []):
+                for b in athlete.get("bikes", []) or []:
                     if b.get("id") and b["id"] not in gear_ids:
                         gear_ids.append(b["id"])
         except Exception as e:
             _LOGGER.warning("Could not fetch athlete profile: %s", e)
+
+        # Also discover gear IDs from recent activities if available
+        try:
+            act_res = requests.get("https://www.strava.com/api/v3/athlete/activities?per_page=50", headers=headers, timeout=10)
+            if act_res.status_code == 200:
+                for act in act_res.json() or []:
+                    act_gid = act.get("gear_id")
+                    if act_gid and act_gid not in gear_ids:
+                        gear_ids.append(act_gid)
+        except Exception as e:
+            _LOGGER.warning("Could not fetch recent activities for gear discovery: %s", e)
 
         shoes = []
         bikes = []
@@ -80,23 +91,32 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                     brand = gj.get("brand_name") or ""
                     model = gj.get("model_name") or ""
                     primary = gj.get("primary", False)
+                    retired = gj.get("retired", False)
+
+                    notif_dist = gj.get("notification_distance")
+                    try:
+                        max_km = round(float(notif_dist), 1) if (notif_dist is not None and float(notif_dist) > 0) else None
+                    except (ValueError, TypeError):
+                        max_km = None
+
+                    wear_pct = min(100.0, round((km / max_km) * 100.0, 1)) if max_km else None
+                    remaining = max(0.0, round(max_km - km, 1)) if max_km else None
+                    replacement_needed = (wear_pct >= 95.0) if wear_pct is not None else False
 
                     if gid.startswith("g"):
-                        name_lower = name.lower()
-                        max_km = 1000.0 if "tr" in name_lower else (600.0 if "pulsar" in name_lower else 800.0)
-                        wear_pct = min(100.0, round((km / max_km) * 100.0, 1))
-                        remaining = max(0.0, round(max_km - km, 1))
                         shoes.append({
                             "id": gid,
                             "name": name,
                             "brand": brand,
                             "model": model,
                             "distance_km": km,
+                            "notification_distance": max_km,
                             "max_km": max_km,
                             "remaining_km": remaining,
                             "wear_pct": wear_pct,
                             "primary": primary,
-                            "replacement_needed": wear_pct >= 95.0
+                            "retired": retired,
+                            "replacement_needed": replacement_needed
                         })
                     elif gid.startswith("b"):
                         bikes.append({
@@ -105,7 +125,12 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                             "brand": brand,
                             "model": model,
                             "distance_km": km,
-                            "primary": primary
+                            "notification_distance": max_km,
+                            "max_km": max_km,
+                            "remaining_km": remaining,
+                            "wear_pct": wear_pct,
+                            "primary": primary,
+                            "retired": retired
                         })
             except Exception as ex:
                 _LOGGER.warning("Failed fetching gear %s: %s", gid, ex)
