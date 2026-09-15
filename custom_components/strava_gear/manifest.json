@@ -2,7 +2,6 @@
   "domain": "strava_gear",
   "name": "Strava Gear & Shoes Tracker",
   "codeowners": [
-    "@lediabloteur",
     "@lediabloteur"
   ],
   "config_flow": true,
