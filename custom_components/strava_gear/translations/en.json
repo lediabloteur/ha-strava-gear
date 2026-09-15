@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Strava Gear & Shoes Tracker",
-        "description": "Configure access to your Strava shoes and bikes.",
+        "description": "Configure access to your Strava shoes and bikes. Each user must provide their own personal Strava API credentials (Client ID, Client Secret, and Refresh Token with profile:read_all and activity:read_all scopes). See the repository documentation for the step-by-step setup guide.",
         "data": {
           "client_id": "Strava Client ID",
           "client_secret": "Strava Client Secret",

@@ -11,10 +11,6 @@ from .const import DOMAIN, CONF_CLIENT_ID, CONF_CLIENT_SECRET, CONF_REFRESH_TOKE
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_GEAR_IDS = [
-    'g22352222', 'g17506784', 'g17087160', 'g30608631', 'g22619110', 'g20131340',
-    'b16216412', 'b10239940', 'b8554804'
-]
 
 class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Strava gear data."""
@@ -51,9 +47,9 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
 
         headers = {"Authorization": f"Bearer {self.access_token}"}
         
-        gear_ids = list(DEFAULT_GEAR_IDS)
+        gear_ids = []
 
-        # Also try to discover gear IDs from athlete profile if available
+        # Discover gear IDs from athlete profile (active shoes and bikes)
         try:
             ath_res = requests.get("https://www.strava.com/api/v3/athlete", headers=headers, timeout=10)
             if ath_res.status_code == 200:
@@ -64,10 +60,12 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                 for b in athlete.get("bikes", []) or []:
                     if b.get("id") and b["id"] not in gear_ids:
                         gear_ids.append(b["id"])
+            else:
+                _LOGGER.warning("Could not fetch athlete profile: HTTP %s (%s)", ath_res.status_code, ath_res.text)
         except Exception as e:
             _LOGGER.warning("Could not fetch athlete profile: %s", e)
 
-        # Also discover gear IDs from recent activities if available
+        # Also discover gear IDs from recent activities (catches retired or unlisted gear)
         try:
             act_res = requests.get("https://www.strava.com/api/v3/athlete/activities?per_page=50", headers=headers, timeout=10)
             if act_res.status_code == 200:
@@ -75,6 +73,8 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                     act_gid = act.get("gear_id")
                     if act_gid and act_gid not in gear_ids:
                         gear_ids.append(act_gid)
+            else:
+                _LOGGER.warning("Could not fetch recent activities for gear discovery: HTTP %s (%s)", act_res.status_code, act_res.text)
         except Exception as e:
             _LOGGER.warning("Could not fetch recent activities for gear discovery: %s", e)
 

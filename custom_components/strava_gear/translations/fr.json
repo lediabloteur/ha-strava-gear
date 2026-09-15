@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Strava Gear & Shoes Tracker",
-        "description": "Configurez l'acc\u00e8s \u00e0 vos \u00e9quipements Strava.",
+        "description": "Configurez l'accès à vos équipements Strava. Chaque utilisateur doit renseigner ses propres identifiants d'API Strava (Client ID, Client Secret, Refresh Token avec autorisations profile:read_all et activity:read_all). Consultez la documentation du dépôt pour le guide pas à pas.",
         "data": {
           "client_id": "Client ID Strava",
           "client_secret": "Client Secret Strava",
