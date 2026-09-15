@@ -88,10 +88,17 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                     gj = g_res.json()
                     name = gj.get("name", "")
                     km = round(gj.get("distance", 0) / 1000.0, 1)
+                    distance_m = gj.get("distance", 0)
+                    converted_distance = gj.get("converted_distance")
                     brand = gj.get("brand_name") or ""
                     model = gj.get("model_name") or ""
+                    nickname = gj.get("nickname") or ""
+                    description = gj.get("description") or ""
                     primary = gj.get("primary", False)
                     retired = gj.get("retired", False)
+                    resource_state = gj.get("resource_state")
+                    frame_type = gj.get("frame_type")
+                    weight = gj.get("weight")
 
                     notif_dist = gj.get("notification_distance")
                     try:
@@ -103,35 +110,36 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
                     remaining = max(0.0, round(max_km - km, 1)) if max_km else None
                     replacement_needed = (wear_pct >= 95.0) if wear_pct is not None else False
 
+                    item_dict = {
+                        "id": gid,
+                        "name": name,
+                        "brand": brand,
+                        "model": model,
+                        "nickname": nickname,
+                        "description": description,
+                        "distance_km": km,
+                        "distance_meters": distance_m,
+                        "converted_distance": converted_distance,
+                        "notification_distance": max_km,
+                        "max_km": max_km,
+                        "remaining_km": remaining,
+                        "wear_pct": wear_pct,
+                        "primary": primary,
+                        "retired": retired,
+                        "resource_state": resource_state,
+                        "frame_type": frame_type,
+                        "weight": weight,
+                        "strava_data": gj,
+                    }
+
                     if gid.startswith("g"):
-                        shoes.append({
-                            "id": gid,
-                            "name": name,
-                            "brand": brand,
-                            "model": model,
-                            "distance_km": km,
-                            "notification_distance": max_km,
-                            "max_km": max_km,
-                            "remaining_km": remaining,
-                            "wear_pct": wear_pct,
-                            "primary": primary,
-                            "retired": retired,
-                            "replacement_needed": replacement_needed
-                        })
+                        item_dict["gear_type"] = "shoe"
+                        item_dict["replacement_needed"] = replacement_needed
+                        shoes.append(item_dict)
                     elif gid.startswith("b"):
-                        bikes.append({
-                            "id": gid,
-                            "name": name,
-                            "brand": brand,
-                            "model": model,
-                            "distance_km": km,
-                            "notification_distance": max_km,
-                            "max_km": max_km,
-                            "remaining_km": remaining,
-                            "wear_pct": wear_pct,
-                            "primary": primary,
-                            "retired": retired
-                        })
+                        item_dict["gear_type"] = "bike"
+                        item_dict["replacement_needed"] = replacement_needed
+                        bikes.append(item_dict)
             except Exception as ex:
                 _LOGGER.warning("Failed fetching gear %s: %s", gid, ex)
 
