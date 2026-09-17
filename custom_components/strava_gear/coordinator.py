@@ -65,9 +65,9 @@ class StravaGearDataUpdateCoordinator(DataUpdateCoordinator):
         except Exception as e:
             _LOGGER.warning("Could not fetch athlete profile: %s", e)
 
-        # Also discover gear IDs from recent activities (catches retired or unlisted gear)
+        # Also discover gear IDs from recent activities (up to 200 activities to cover all seasons)
         try:
-            act_res = requests.get("https://www.strava.com/api/v3/athlete/activities?per_page=50", headers=headers, timeout=10)
+            act_res = requests.get("https://www.strava.com/api/v3/athlete/activities?per_page=200", headers=headers, timeout=10)
             if act_res.status_code == 200:
                 for act in act_res.json() or []:
                     act_gid = act.get("gear_id")
